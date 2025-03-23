@@ -5,7 +5,55 @@ import socket
 from dateutil import parser
 from timeit import default_timer as timer
 
-# Removido a importação do pywintypes e win32api, pois não são necessários no celular
+# Função para ajustar o horário do sistema no Windows
+import win32api
+import pywintypes
+
+
+def atualizar_horario_sistema_windows(timestamp):
+    """
+    Função para ajustar o horário do sistema no Windows.
+    """
+    try:
+        # Converte o timestamp para o formato adequado
+        data_hora = (
+            # Dia da semana (0=domingo, 1=segunda, etc.)
+            timestamp.year, timestamp.month, timestamp.weekday() + 1,
+            timestamp.day, timestamp.hour, timestamp.minute, timestamp.second,
+            timestamp.microsecond // 1000  # Windows usa milissegundos
+        )
+        # Ajusta o horário do sistema
+        win32api.SetSystemTime(*data_hora)
+    except pywintypes.error as e:
+        print(f"Erro ao ajustar o horário do sistema: {e}")
+
+
+def atualizar_horario_sistema(timestamp):
+    """
+    Função para ajustar o horário do sistema, compatível com Linux e Windows.
+    """
+    if sys.platform.startswith('linux'):
+        # Código para Linux
+        try:
+            import subprocess
+            import shlex
+
+            data_hora = (timestamp.year, timestamp.month, timestamp.day,
+                         timestamp.hour, timestamp.minute, timestamp.second,
+                         timestamp.microsecond)
+            str_data_hora = datetime.datetime(*data_hora).isoformat()
+
+            subprocess.call(shlex.split("sudo timedatectl set-ntp false"))
+            subprocess.call(shlex.split(f"sudo date -s '{str_data_hora}'"))
+            subprocess.call(shlex.split("sudo hwclock -w"))
+        except Exception as e:
+            print(f"Erro ao ajustar o horário do sistema: {e}")
+    elif sys.platform.startswith('win32'):
+        # Código para Windows
+        atualizar_horario_sistema_windows(timestamp)
+    else:
+        print("Sistema operacional não suportado para ajuste de horário.")
+
 
 def sincronizar_cliente():
     """
@@ -15,7 +63,7 @@ def sincronizar_cliente():
         # Cria um socket para comunicação com o servidor
         sock = socket.socket()
         # Conecta ao servidor local na porta 8000
-        sock.connect(('192.168.5.171', 8000))  # IP do servidor no notebook
+        sock.connect(('127.0.0.1', 8000))
     except Exception as e:
         print(f"Erro ao conectar ao servidor: {e}")
         return None, None  # Retorna valores nulos em caso de erro
@@ -39,7 +87,8 @@ def sincronizar_cliente():
     print(f"Latência: {latencia:.6f} segundos")
 
     # Ajusta o horário do cliente com base no horário do servidor e na latência
-    horario_ajustado = horario_servidor + datetime.timedelta(seconds=latencia / 2)
+    horario_ajustado = horario_servidor + \
+        datetime.timedelta(seconds=latencia / 2)
 
     # Remover fuso horário de ambos os horários (torná-los naive)
     horario_atual_cliente = horario_atual_cliente.replace(tzinfo=None)
@@ -49,22 +98,30 @@ def sincronizar_cliente():
     erro = horario_ajustado - horario_atual_cliente
     ajuste_gradual = erro * 0.1  # Ajuste gradual de 10%
 
-    # Não ajustamos o horário do sistema no celular (não é possível fazer isso)
-    print(f"Horário ajustado (gradualmente): {horario_atual_cliente + ajuste_gradual}")
+    # Atualiza o horário do sistema (Windows ou Linux)
+    atualizar_horario_sistema(horario_atual_cliente + ajuste_gradual)
+
+    print(
+        f"Horário ajustado (gradualmente): {horario_atual_cliente + ajuste_gradual}")
 
     # Calcula a diferença entre o horário atual e o ajustado
-    diferenca = abs(horario_atual_cliente - (horario_atual_cliente + ajuste_gradual))
-    print(f"Diferença de sincronização: {diferenca.total_seconds():.6f} segundos")
+    diferenca = abs(horario_atual_cliente -
+                    (horario_atual_cliente + ajuste_gradual))
+    print(
+        f"Diferença de sincronização: {diferenca.total_seconds():.6f} segundos")
 
     sock.close()
     return latencia, diferenca.total_seconds()
+
 
 def salvar_log(latencia, diferenca):
     """
     Função para salvar logs de sincronização em um arquivo.
     """
     with open("log_sincronizacao.txt", "a") as arquivo_log:
-        arquivo_log.write(f"Latência: {latencia:.6f} segundos, Diferença: {diferenca:.6f} segundos\n")
+        arquivo_log.write(
+            f"Latência: {latencia:.6f} segundos, Diferença: {diferenca:.6f} segundos\n")
+
 
 if __name__ == '__main__':
     intervalo_minutos = 0.5  # Intervalo de sincronização em minutos
@@ -80,9 +137,12 @@ if __name__ == '__main__':
             diferenca_total += diferenca
 
             # Exibe as médias de latência e diferença de sincronização
-            print(f"Média de latência: {latencia_total / iteracao:.6f} segundos")
-            print(f"Média de diferença de sincronização: {diferenca_total / iteracao:.6f} segundos")
-            print("-------------------------------------------------------------------------------")
+            print(
+                f"Média de latência: {latencia_total / iteracao:.6f} segundos")
+            print(
+                f"Média de diferença de sincronização: {diferenca_total / iteracao:.6f} segundos")
+            print(
+                "-------------------------------------------------------------------------------")
 
             # Salva os logs em um arquivo
             salvar_log(latencia, diferenca)
