@@ -2,7 +2,7 @@ import socket
 import ntplib
 from datetime import datetime, timezone
 import threading
-
+import time
 
 def obter_horario_ntp():
     """
@@ -19,7 +19,6 @@ def obter_horario_ntp():
         # Retorna o horário local em caso de falha
         return datetime.now(timezone.utc)
 
-
 def salvar_log(mensagem):
     """
     Função para salvar logs de atividade do servidor em um arquivo.
@@ -27,12 +26,14 @@ def salvar_log(mensagem):
     with open("log_servidor.txt", "a") as arquivo_log:
         arquivo_log.write(f"{datetime.now(timezone.utc)} - {mensagem}\n")
 
-
 def tratar_cliente(conexao, endereco):
     """
     Função para tratar a conexão de um cliente.
     """
     try:
+        # Registra o momento de envio da requisição
+        inicio_requisicao = time.time()
+
         # Obtém o horário atual do NTP
         horario_atual = obter_horario_ntp()
         print(f"Horário enviado ao cliente {endereco}: {horario_atual}")
@@ -40,14 +41,23 @@ def tratar_cliente(conexao, endereco):
 
         # Envia o horário para o cliente
         conexao.send(str(horario_atual).encode())
+
+        # Registra o momento da resposta
+        fim_resposta = time.time()
+
+        # Calcula a latência (tempo de ida e volta)
+        latencia = fim_resposta - inicio_requisicao
+        print(f"Latência para o cliente {endereco}: {latencia:.6f} segundos")
+        salvar_log(f"Latência para o cliente {endereco}: {latencia:.6f} segundos")
+
     except Exception as e:
         print(f"Erro ao tratar o cliente {endereco}: {e}")
+        salvar_log(f"Erro ao tratar o cliente {endereco}: {e}")
     finally:
         # Fecha a conexão com o cliente
         conexao.close()
         print(f"Conexão com {endereco} encerrada.")
         salvar_log(f"Conexão com {endereco} encerrada.")
-
 
 def iniciar_servidor():
     """
@@ -57,7 +67,8 @@ def iniciar_servidor():
     sock = socket.socket()
 
     # Associa o socket ao endereço e porta 8000
-    sock.bind(('', 8000))
+    sock.bind(('0.0.0.0', 8000))  # Permite conexões de qualquer IP na rede local
+
 
     # Coloca o servidor em modo de escuta
     sock.listen(5)
@@ -71,9 +82,7 @@ def iniciar_servidor():
         salvar_log(f"Conexão estabelecida com {endereco}")
 
         # Cria uma thread para tratar o cliente
-        threading.Thread(target=tratar_cliente,
-                         args=(conexao, endereco)).start()
-
+        threading.Thread(target=tratar_cliente, args=(conexao, endereco), daemon=True).start()
 
 if __name__ == '__main__':
     iniciar_servidor()

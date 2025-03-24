@@ -1,100 +1,93 @@
-# Cristian's Algorithm
 
-Este repositório contém uma implementação do **Algoritmo de Cristian**, desenvolvido como parte da disciplina de Sistemas Distribuídos na **Universidade Federal de Ouro Preto**.
+# Sincronização de Horário - Algoritmo de Cristian
 
-## Sobre o Algoritmo de Cristian
+Este projeto implementa o **Algoritmo de Cristian** para sincronização de horários entre um servidor e um cliente em uma rede local. O servidor usa o protocolo NTP (Network Time Protocol) para obter o horário exato e enviá-lo ao cliente. O cliente calcula a latência e ajusta seu horário local com base no horário recebido do servidor.
 
-O Algoritmo de Cristian é um método utilizado para sincronização de relógios em sistemas distribuídos. Ele permite que um cliente ajuste seu relógio com base no tempo fornecido por um servidor central, minimizando as discrepâncias temporais entre os nós do sistema.
+## Estrutura do Projeto
 
-Esta implementação foi desenvolvida para funcionar em sistemas **Windows**, utilizando a biblioteca `pywin32` para ajustar o horário do sistema.
+- **client.py**: Código do cliente responsável por se conectar ao servidor e sincronizar seu horário com base no horário fornecido pelo servidor.
+- **server.py**: Código do servidor que fornece o horário NTP para os clientes.
+- **clientDevice.py**: Versão do código cliente para execução no dispositivo móvel usando Termux.
+
+## Requisitos
+
+- **Python 3.x**
+- **Bibliotecas**:
+  - `ntplib` (para interação com servidores NTP)
+  - `python-dateutil` (para manipulação de datas)
+  - `timeit` (para medir o tempo de latência)
+  
+### Instalando as Bibliotecas no Termux
+
+No seu dispositivo Android com Termux, instale o Python e as bibliotecas necessárias com os seguintes comandos:
+
+```bash
+pkg install python
+pip install ntplib python-dateutil
+```
 
 ## Como Executar
 
-Para executar a implementação, siga os passos abaixo:
+### 1. Executando o Servidor (server.py)
 
-### Pré-requisitos
+O servidor escuta na porta `8000` e envia o horário NTP para os clientes que se conectam a ele.
 
-1. **Python 3**:
-   - Certifique-se de que o Python 3 está instalado no seu sistema. Você pode verificar isso executando:
-     ```bash
-     python --version
-     ```
-   - Caso não tenha o Python instalado, baixe e instale a partir do site oficial: [python.org](https://www.python.org/).
+1. Abra o Termux e navegue até o diretório onde o `server.py` está localizado.
+2. Execute o servidor com o seguinte comando:
 
-2. **Bibliotecas Necessárias**:
-   - Instale as bibliotecas necessárias executando o seguinte comando no terminal:
-     ```bash
-     pip install ntplib python-dateutil pywin32
-     ```
+```bash
+python server.py
+```
 
-3. **Permissões de Administrador**:
-   - No Windows, o cliente precisa ser executado com permissões de administrador para ajustar o horário do sistema. Certifique-se de abrir o terminal como administrador ao executar o cliente.
+O servidor ficará aguardando conexões de clientes.
 
----
+### 2. Executando o Cliente (client.py ou clientDevice.py)
 
-### Passos para Execução
+O cliente se conecta ao servidor e sincroniza seu horário com base no horário recebido.
 
-1. **Servidor**:
+1. No **Notebook** ou **Termux (dispositivo móvel)**, abra o arquivo `client.py` (ou `clientDevice.py` no Termux).
+2. Execute o cliente com o seguinte comando:
 
-   - Abra um terminal e navegue até o diretório do projeto.
-   - Execute o servidor utilizando o comando:
-     ```bash
-     python server.py
-     ```
-   - O servidor estará ativo e aguardando conexões dos clientes.
+```bash
+python clientDevice.py
+```
 
-2. **Cliente**:
+Isso iniciará a sincronização do horário. O cliente calculará a latência e ajustará seu horário local (sem alterar o horário do sistema no celular). O log será salvo no arquivo `log_sincronizacao.txt`.
 
-   - Abra um **novo terminal como administrador**:
-     - No Windows, pesquise por "Command Prompt" ou "PowerShell" no menu Iniciar.
-     - Clique com o botão direito e selecione **"Executar como administrador"**.
-   - Navegue até o diretório do projeto.
-   - Execute o cliente utilizando o comando:
-     ```bash
-     python client.py
-     ```
-   - O cliente se conectará ao servidor, ajustará o horário do sistema e exibirá métricas de latência e diferença de sincronização.
+### Configuração de Rede
 
-3. **Múltiplos Clientes**:
+Certifique-se de que o **servidor e os clientes** estão na mesma rede Wi-Fi local. O servidor usa o IP `192.168.5.171` (ou o IP do servidor local) para que os clientes se conectem.
 
-   - Para simular múltiplos dispositivos, abra vários terminais como administrador e execute o cliente em cada um deles.
-   - Cada cliente se conectará ao servidor e ajustará seu relógio de forma independente.
+### Log de Sincronização
 
----
+A cada execução, o cliente salva as latências e diferenças de sincronização no arquivo `log_sincronizacao.txt`, o que pode ser útil para depuração e análise de desempenho.
 
-### Estrutura do Projeto
+### Exemplo de Log:
 
-- **server.py**: Contém a implementação do servidor, que consulta o horário do NTP e envia para os clientes.
-- **client.py**: Contém a implementação do cliente, que ajusta o horário do sistema com base no horário recebido do servidor.
-- **log_servidor.txt**: Arquivo de log gerado pelo servidor, registrando as conexões e horários enviados.
-- **log_sincronizacao.txt**: Arquivo de log gerado pelo cliente, registrando as métricas de latência e diferença de sincronização.
+```text
+Latência: 0.060939 segundos, Diferença: 0.001234 segundos
+Média de latência: 0.060939 segundos
+Média de diferença de sincronização: 0.001234 segundos
+-------------------------------------------------------------------------------
+```
 
----
+## Estrutura do Código
 
-### Observações
+### server.py
 
-- **Permissões de Administrador**: No Windows, o cliente precisa ser executado como administrador para ajustar o horário do sistema. Caso contrário, ocorrerá um erro de permissão.
-- **Fuso Horário**: O servidor envia o horário no formato UTC. O cliente converte o horário para o fuso horário local antes de ajustar o sistema.
-- **Logs**: Os logs são salvos nos arquivos `log_servidor.txt` e `log_sincronizacao.txt` para facilitar a análise e depuração.
+- **Função `obter_horario_ntp()`**: Obtém o horário atual de um servidor NTP.
+- **Função `tratar_cliente()`**: Trata a conexão com o cliente e envia o horário NTP.
+- **Função `iniciar_servidor()`**: Inicia o servidor e espera por conexões de clientes.
 
----
+### client.py (ou clientDevice.py)
 
-### Exemplo de Saída
+- **Função `sincronizar_cliente()`**: Conecta-se ao servidor e calcula a latência, ajustando o horário local com base no horário do servidor.
+- **Função `salvar_log()`**: Salva as informações de latência e diferença de sincronização no arquivo de log.
 
-#### Servidor:
+## Considerações Finais
 
-Servidor ativo e aguardando conexões...
-Conexão estabelecida com ('127.0.0.1', 54321)
-Horário enviado ao cliente ('127.0.0.1', 54321): 2025-03-20 20:55:30.273088+00:00
-Conexão com ('127.0.0.1', 54321) encerrada.
+Este projeto é uma implementação básica do **Algoritmo de Cristian** em um ambiente de rede local. Ele pode ser adaptado para redes maiores ou para melhorar a precisão da sincronização.
 
-
-#### Cliente:
-
-Iteração: 1
-Horário recebido do servidor: 2025-03-20 20:55:30.273088+00:00
-Latência: 0.037462 segundos
-Horário ajustado: 2025-03-20 20:55:30.291819+00:00
-Diferença de sincronização: 0.018331 segundos
-
-
+**Limitações**:
+- O **ajuste do horário do sistema** não é realizado no cliente em dispositivos móveis, apenas o cálculo e exibição da diferença.
+- A **sincronização é feita periodicamente**, mas o código não garante precisão absoluta em redes com alta latência.

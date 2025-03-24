@@ -7,6 +7,7 @@ from timeit import default_timer as timer
 
 # Removido a importação do pywintypes e win32api, pois não são necessários no celular
 
+
 def sincronizar_cliente():
     """
     Função principal do cliente para sincronizar o horário usando o Algoritmo de Cristian.
@@ -39,7 +40,8 @@ def sincronizar_cliente():
     print(f"Latência: {latencia:.6f} segundos")
 
     # Ajusta o horário do cliente com base no horário do servidor e na latência
-    horario_ajustado = horario_servidor + datetime.timedelta(seconds=latencia / 2)
+    horario_ajustado = horario_servidor + \
+        datetime.timedelta(seconds=latencia / 2)
 
     # Remover fuso horário de ambos os horários (torná-los naive)
     horario_atual_cliente = horario_atual_cliente.replace(tzinfo=None)
@@ -49,24 +51,30 @@ def sincronizar_cliente():
     erro = horario_ajustado - horario_atual_cliente
     ajuste_gradual = erro * 0.1  # Ajuste gradual de 10%
 
-    # Não ajustamos o horário do sistema no celular (não é possível fazer isso)
-    print(f"Horário ajustado (gradualmente): {horario_atual_cliente + ajuste_gradual}")
+    # Apenas exibe o horário ajustado gradualmente (sem alterar o horário do sistema)
+    print(
+        f"Horário ajustado (gradualmente): {horario_atual_cliente + ajuste_gradual}")
 
     # Calcula a diferença entre o horário atual e o ajustado
-    diferenca = abs(horario_atual_cliente - (horario_atual_cliente + ajuste_gradual))
-    print(f"Diferença de sincronização: {diferenca.total_seconds():.6f} segundos")
+    diferenca = abs(horario_atual_cliente -
+                    (horario_atual_cliente + ajuste_gradual))
+    print(
+        f"Diferença de sincronização: {diferenca.total_seconds():.6f} segundos")
 
     sock.close()
     return latencia, diferenca.total_seconds()
+
 
 def salvar_log(latencia, diferenca):
     """
     Função para salvar logs de sincronização em um arquivo.
     """
     with open("log_sincronizacao.txt", "a") as arquivo_log:
-        arquivo_log.write(f"Latência: {latencia:.6f} segundos, Diferença: {diferenca:.6f} segundos\n")
+        arquivo_log.write(
+            f"Latência: {latencia:.6f} segundos, Diferença: {diferenca:.6f} segundos\n")
 
-if __name__ == '__main__':
+
+if _name_ == '_main_':
     intervalo_minutos = 0.5  # Intervalo de sincronização em minutos
     iteracao = 1  # Contador de iterações
     latencia_total = 0
@@ -80,9 +88,12 @@ if __name__ == '__main__':
             diferenca_total += diferenca
 
             # Exibe as médias de latência e diferença de sincronização
-            print(f"Média de latência: {latencia_total / iteracao:.6f} segundos")
-            print(f"Média de diferença de sincronização: {diferenca_total / iteracao:.6f} segundos")
-            print("-------------------------------------------------------------------------------")
+            print(
+                f"Média de latência: {latencia_total / iteracao:.6f} segundos")
+            print(
+                f"Média de diferença de sincronização: {diferenca_total / iteracao:.6f} segundos")
+            print(
+                "-------------------------------------------------------------------------------")
 
             # Salva os logs em um arquivo
             salvar_log(latencia, diferenca)
