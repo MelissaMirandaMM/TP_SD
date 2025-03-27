@@ -16,6 +16,7 @@ Este projeto implementa o **Algoritmo de Cristian** para sincronização de hor�
   - `ntplib` (para interação com servidores NTP)
   - `python-dateutil` (para manipulação de datas)
   - `timeit` (para medir o tempo de latência)
+  - `pywin32` (vínculo python e Windows)
   
 ### Instalando as Bibliotecas no Termux
 
@@ -24,6 +25,7 @@ No seu dispositivo Android com Termux, instale o Python e as bibliotecas necess�
 ```bash
 pkg install python
 pip install ntplib python-dateutil
+pip install pywin32
 ```
 
 ## Como Executar
